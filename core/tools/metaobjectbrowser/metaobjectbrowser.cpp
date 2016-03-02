@@ -38,11 +38,13 @@
 
 #include <QDebug>
 #include <QItemSelectionModel>
+#include <QMetaProperty>
+#include <QMetaType>
 
 using namespace GammaRay;
 
 MetaObjectBrowser::MetaObjectBrowser(ProbeInterface *probe, QObject *parent)
-    : QObject(parent)
+    : MetaObjectBrowserInterface(parent)
     , m_propertyController(new PropertyController(QStringLiteral("com.kdab.GammaRay.MetaObjectBrowser"), this))
 {
   m_model = new ServerProxyModel<KRecursiveFilterProxyModel>(this);
@@ -82,6 +84,61 @@ void MetaObjectBrowser::objectSelected(QObject *obj)
     if (indexes.isEmpty())
         return;
     ObjectBroker::selectionModel(m_model)->select(indexes.first(), QItemSelectionModel::Rows | QItemSelectionModel::ClearAndSelect);
+}
+
+void MetaObjectBrowser::scanForIssues()
+{
+    scanForIssues(QModelIndex());
+}
+
+void MetaObjectBrowser::scanForIssues(const QModelIndex &index)
+{
+    if (index.isValid()) {
+        auto mo = index.data(MetaObjectTreeModel::MetaObjectRole).value<const QMetaObject*>();
+        scanForIssues(mo);
+    }
+
+    for (int i = 0; i < Probe::instance()->metaObjectModel()->rowCount(index); ++i) {
+        const auto childIdx = Probe::instance()->metaObjectModel()->index(i, 0, index);
+        if (childIdx.isValid())
+            scanForIssues(childIdx);
+    }
+}
+
+void MetaObjectBrowser::scanForIssues(const QMetaObject* mo)
+{
+    // TODO output results in a form the client can see...
+    Q_ASSERT(mo);
+    if (!mo->superClass())
+        return;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    for (int i = mo->propertyOffset(); i < mo->propertyCount(); ++i) {
+        const auto prop = mo->property(i);
+
+        const auto baseIdx = mo->superClass()->indexOfProperty(prop.name());
+        if (baseIdx >= 0)
+            qDebug() << mo->className() << prop.name() << "property override";
+
+        if (prop.userType() == QMetaType::UnknownType)
+            qDebug() << "Unknown property type:" << prop.typeName() << "of property" << mo->className() << "::" << prop.name();
+    }
+
+    for (int i = mo->methodOffset(); i < mo->methodCount(); ++i) {
+        const auto method = mo->method(i);
+        for (int j = 0; j < method.parameterCount(); ++j) {
+            if (method.parameterType(j) == QMetaType::UnknownType)
+                qDebug() << "parameter" << j << "of" << mo->className() << "::" << method.methodSignature() << "has unknown type.";
+        }
+
+        if (method.methodType() != QMetaMethod::Signal)
+            continue;
+
+        const auto baseIdx = mo->superClass()->indexOfMethod(method.methodSignature());
+        if (baseIdx >= 0)
+            qDebug() << mo->className() << method.methodSignature() << "signal override";
+    }
+#endif
 }
 
 QString MetaObjectBrowserFactory::name() const
