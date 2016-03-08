@@ -48,3 +48,7 @@ if(Qt53DRender_FOUND)
     add_subdirectory(qt3dinspector)
   endif()
 endif()
+
+if(Qt5WaylandCompositor_FOUND)
+  add_subdirectory(wlcompositorinspector)
+endif()

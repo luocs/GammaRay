@@ -237,6 +237,7 @@ if(Qt5Core_FOUND)
     Test
     WebKitWidgets
     Widgets
+    WaylandCompositor
   )
   # starting with 5.6, the Designer module needs CMake 3.0 or higher
   if (Qt5Core_VERSION VERSION_LESS 5.6 OR NOT CMAKE_VERSION VERSION_LESS 3.0)
