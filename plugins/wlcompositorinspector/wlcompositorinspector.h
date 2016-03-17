@@ -34,6 +34,8 @@
 #include <QWaylandCompositor>
 #include <QStringList>
 
+#include "wlcompositorinterface.h"
+
 class QStringListModel;
 
 struct wl_client;
@@ -41,13 +43,18 @@ struct wl_client;
 namespace GammaRay {
 
 class ClientsModel;
+class ResourcesModel;
 
-class WlCompositorInspector: public QObject
+class WlCompositorInspector: public WlCompositorInterface
 {
     Q_OBJECT
+    Q_INTERFACES(GammaRay::WlCompositorInterface)
 public:
     explicit WlCompositorInspector(ProbeInterface *probe, QObject *parent = 0);
     ~WlCompositorInspector();
+
+public slots:
+    void setSelectedClient(int index) override;
 
 private slots:
     void objectAdded(QObject *obj);
@@ -57,8 +64,8 @@ private:
     void addClient(wl_client *c);
 
     QWaylandCompositor *m_compositor;
-    QStringList m_clients;
     ClientsModel *m_clientsModel;
+    ResourcesModel *m_resourcesModel;
 };
 
 class WlCompositorInspectorFactory: public QObject, public StandardToolFactory<QWaylandCompositor, WlCompositorInspector>
