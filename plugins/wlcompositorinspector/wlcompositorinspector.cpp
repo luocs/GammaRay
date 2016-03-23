@@ -40,8 +40,71 @@
 #include <core/remote/serverproxymodel.h>
 #include <3rdparty/kde/krecursivefilterproxymodel.h>
 
+#include "ringbuffer.h"
+
 namespace GammaRay
 {
+
+class Logger : public QObject
+{
+public:
+    enum class Direction {
+        In,
+        Out,
+    };
+
+    Logger(WlCompositorInspector *inspector, QObject *parent)
+        : QObject(parent)
+        , m_lines(500)
+        , m_currentClient(0)
+        , m_connected(false)
+        , m_inspector(inspector)
+    {
+    }
+
+    void add(wl_resource *res, Direction dir, const QString &line)
+    {
+        if (m_currentClient && m_currentClient != wl_resource_get_client(res))
+          return;
+
+        pid_t pid;
+        wl_client_get_credentials(wl_resource_get_client(res), &pid, 0, 0);
+        QString l = QStringLiteral("%1 %2 %3").arg(QString::number(pid),
+                                                   dir == Direction::In ? QLatin1String("->") : QLatin1String("<-"),
+                                                   line);
+        // we use QByteArray rather than QString because the log has mostly (only) latin characters
+        // so we save some space using utf8 rather than the utf16 QString uses
+        QByteArray utf8 = l.toUtf8();
+        m_lines.append(utf8);
+        if (m_connected) {
+            emit m_inspector->logMessage(utf8);
+        }
+    }
+
+    void setCurrentClient(QWaylandClient *client)
+    {
+        m_currentClient = client ? client->client() : nullptr;
+
+        m_lines.clear();
+        if (m_connected) {
+            emit m_inspector->resetLog();
+        }
+    }
+
+    void setConnected(bool c)
+    {
+        m_connected = c;
+        for (int i = 0; i < m_lines.count(); ++i) {
+            emit m_inspector->logMessage(m_lines.at(i));
+        }
+    }
+
+    RingBuffer<QByteArray> m_lines;
+    int m_timerId;
+    wl_client *m_currentClient;
+    bool m_connected;
+    WlCompositorInspector *m_inspector;
+};
 
 class ResourcesModel : public QAbstractItemModel
 {
@@ -306,6 +369,7 @@ public:
 
     QVariant data(const QModelIndex &index, int role) const override
     {
+        Q_UNUSED(role)
         auto client = m_clients.at(index.row());
 
         switch (index.column()) {
@@ -370,6 +434,8 @@ WlCompositorInspector::WlCompositorInspector(ProbeInterface* probe, QObject* par
     m_resourcesModel = new ResourcesModel;
     probe->registerModel(QStringLiteral("com.kdab.GammaRay.WaylandCompositorResourcesModel"), m_resourcesModel);
 
+    m_logger = new Logger(this, this);
+
     connect(probe->probe(), SIGNAL(objectCreated(QObject*)), this, SLOT(objectAdded(QObject*)));
 }
 
@@ -395,6 +461,10 @@ void WlCompositorInspector::init(QWaylandCompositor *compositor)
     m_compositor = compositor;
 
     wl_display *dpy = compositor->display();
+    wl_add_protocol_logger(dpy, [](void *ud, wl_resource *res, wl_protocol_logger_direction dir, const char *c) {
+        static_cast<WlCompositorInspector *>(ud)->m_logger->add(res, dir == WL_PROTOCOL_LOGGER_INCOMING ? Logger::Direction::In : Logger::Direction::Out, c);
+    }, this);
+
     wl_list *clients = wl_display_get_client_list(dpy);
     wl_client *client;
     wl_client_for_each(client, clients) {
@@ -429,11 +499,22 @@ QString WlCompositorInspectorFactory::name() const
     return tr("QtWaylandCompositor");
 }
 
+void WlCompositorInspector::connected()
+{
+    m_logger->setConnected(true);
+}
+
+void WlCompositorInspector::disconnected()
+{
+    m_logger->setConnected(false);
+}
+
 void WlCompositorInspector::setSelectedClient(int index)
 {
     auto client = index >= 0 ?  m_clientsModel->client(index) : nullptr;
     if (client != m_resourcesModel->client()) {
         m_resourcesModel->setClient(client);
+        m_logger->setCurrentClient(client);
     }
 }
 
