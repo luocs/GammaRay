@@ -361,6 +361,7 @@ WlCompositorInspector::WlCompositorInspector(ProbeInterface* probe, QObject* par
     qWarning()<<"init probe"<<probe->objectTreeModel()<<probe->probe();
 
     MetaObject *mo = 0;
+    MO_ADD_METAOBJECT1(QWaylandObject, QObject);
     MO_ADD_METAOBJECT1(QWaylandCompositor, QWaylandObject);
 
     m_clientsModel = new ClientsModel(probe, this);
