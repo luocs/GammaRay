@@ -41,6 +41,7 @@
 #include <3rdparty/kde/krecursivefilterproxymodel.h>
 
 #include "ringbuffer.h"
+#include "resourceinfo.h"
 
 namespace GammaRay
 {
@@ -296,11 +297,12 @@ public:
         const Resource *resource = static_cast<Resource *>(index.internalPointer());
         wl_resource *res = resource->resource;
 
+        ResourceInfo info(res);
         switch (role) {
             case Qt::DisplayRole:
-                return QString("%1@%2").arg(wl_resource_get_interface(res)->name, QString::number(wl_resource_get_id(res)));
+              return info.name();
             case Qt::ToolTipRole:
-                return tr("Version: %1").arg(QString::number(wl_resource_get_version(res)));
+                return info.info();
         }
         return QVariant();
     }
