@@ -103,9 +103,19 @@ ResourceInfo::ResourceInfo(wl_resource *resource)
 {
 }
 
+uint32_t ResourceInfo::id() const
+{
+  return wl_resource_get_id(m_resource);
+}
+
+const wl_interface *ResourceInfo::interface() const
+{
+  return wl_resource_get_interface(m_resource);
+}
+
 QString ResourceInfo::name() const
 {
-  return QString("%1@%2").arg(wl_resource_get_interface(m_resource)->name, QString::number(wl_resource_get_id(m_resource)));
+  return QString("%1@%2").arg(interface()->name, QString::number(id()));
 }
 
 QString ResourceInfo::info() const
