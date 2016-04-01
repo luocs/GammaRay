@@ -601,7 +601,7 @@ void WlCompositorInspector::addClient(wl_client *c)
 
 QString WlCompositorInspectorFactory::name() const
 {
-    return tr("QtWaylandCompositor");
+    return tr("Wayland Compositor");
 }
 
 void WlCompositorInspector::connected()
