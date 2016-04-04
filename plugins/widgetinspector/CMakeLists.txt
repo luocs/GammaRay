@@ -5,6 +5,7 @@ set(gammaray_widgetinspector_plugin_srcs
   widgetinspectorserver.cpp
   overlaywidget.cpp
   widgettreemodel.cpp
+  widget3dmodel.cpp
 )
 
 gammaray_add_plugin(gammaray_widgetinspector_plugin
@@ -17,6 +18,8 @@ target_link_libraries(gammaray_widgetinspector_plugin
   ${QT_QTGUI_LIBRARIES}
   gammaray_kitemmodels
   gammaray_core
+  Qt5::3DCore
+  Qt5::3DRender
 )
 
 # probe export actions
@@ -55,10 +58,16 @@ if(GAMMARAY_BUILD_UI)
     widgetinspectorinterface.cpp
     widgetinspectorclient.cpp
     widgetinspectorwidget.cpp
+    widget3dimagetextureimage.cpp
+    widget3dview.cpp
   )
 
   qt4_wrap_ui(gammaray_widgetinspector_ui_plugin_srcs
     widgetinspectorwidget.ui
+  )
+
+  qt4_add_resources(gammaray_widgetinspector_ui_plugin_srcs
+    assets.qrc
   )
 
   gammaray_add_plugin(gammaray_widgetinspector_ui_plugin
@@ -69,6 +78,12 @@ if(GAMMARAY_BUILD_UI)
 
   target_link_libraries(gammaray_widgetinspector_ui_plugin
     ${QT_QTGUI_LIBRARIES}
+    Qt5::Qml
+    Qt5::3DRender
+    Qt5::3DLogic
+    Qt5::3DInput
+    Qt5::3DQuick
     gammaray_ui
+    gammaray_client
   )
 endif()

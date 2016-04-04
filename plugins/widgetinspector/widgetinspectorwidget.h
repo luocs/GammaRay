@@ -39,6 +39,7 @@ namespace GammaRay {
 
 class RemoteViewWidget;
 class WidgetInspectorInterface;
+class Widget3DView;
 
 namespace Ui {
   class WidgetInspectorWidget;
@@ -52,6 +53,7 @@ class WidgetInspectorWidget : public QWidget
     ~WidgetInspectorWidget();
 
   private slots:
+    void onTabChanged(int index);
     void widgetSelected(const QItemSelection &selection);
     void widgetTreeContextMenu(QPoint pos);
 
@@ -66,6 +68,7 @@ class WidgetInspectorWidget : public QWidget
     QScopedPointer<Ui::WidgetInspectorWidget> ui;
     WidgetInspectorInterface *m_inspector;
     RemoteViewWidget *m_remoteView;
+    Widget3DView *m_3dView;
 };
 
 class WidgetInspectorUiFactory : public QObject, public StandardToolUiFactory<WidgetInspectorWidget>

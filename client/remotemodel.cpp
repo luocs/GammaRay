@@ -261,7 +261,7 @@ QVariant RemoteModel::headerData(int section, Qt::Orientation orientation, int r
       return QVariant();
     headers.resize(count);
   }
-  Q_ASSERT(headers.size() > section);
+  //Q_ASSERT(headers.size() > section);
   if (headers.at(section).isEmpty())
     requestHeaderData(orientation, section);
 

@@ -33,6 +33,7 @@
 
 #include "overlaywidget.h"
 #include "widgettreemodel.h"
+#include "widget3dmodel.h"
 
 #include "core/propertycontroller.h"
 #include "core/metaobject.h"
@@ -103,8 +104,13 @@ WidgetInspectorServer::WidgetInspectorServer(ProbeInterface *probe, QObject *par
   auto widgetSearchProxy = new ServerProxyModel<KRecursiveFilterProxyModel>(this);
   widgetSearchProxy->setSourceModel(widgetFilterProxy);
   widgetSearchProxy->addRole(ObjectModel::ObjectIdRole);
+  widgetSearchProxy->addRole(ObjectModel::ObjectRole);
 
   probe->registerModel(QStringLiteral("com.kdab.GammaRay.WidgetTree"), widgetSearchProxy);
+
+  auto widget3dmodel = new Widget3DModel(this);
+  widget3dmodel->setSourceModel(m_probe->objectListModel());
+  probe->registerModel(QStringLiteral("com.kdab.GammaRay.Widget3DModel"), widget3dmodel);
 
   m_widgetSelectionModel = ObjectBroker::selectionModel(widgetSearchProxy);
   connect(m_widgetSelectionModel,
