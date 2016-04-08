@@ -221,11 +221,6 @@ if(Qt5Core_FOUND)
   set_package_properties(Qt5Core PROPERTIES TYPE REQUIRED)
   find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui Network)
   find_package(Qt5 NO_MODULE QUIET OPTIONAL_COMPONENTS
-    3DCore
-    3DRender
-    3DInput
-    3DQuick
-    3DLogic
     Bluetooth
     Concurrent
     Positioning
@@ -240,6 +235,16 @@ if(Qt5Core_FOUND)
     WebKitWidgets
     Widgets
   )
+
+  # 3D Widget inspector requires Qt3D 5.7
+  find_package(Qt5 5.7 NO_MODULE QUIET OPTIONAL_COMPONENTS
+    3DCore
+    3DRender
+    3DInput
+    3DQuick
+    3DLogic
+  )
+
   # starting with 5.6, the Designer module needs CMake 3.0 or higher
   if (Qt5Core_VERSION VERSION_LESS 5.6 OR NOT CMAKE_VERSION VERSION_LESS 3.0)
     find_package(Qt5 NO_MODULE QUIET OPTIONAL_COMPONENTS Designer)

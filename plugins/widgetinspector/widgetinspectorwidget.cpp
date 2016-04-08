@@ -31,7 +31,9 @@
 #include "widgetinspectorinterface.h"
 #include "widgetinspectorclient.h"
 #include "ui_widgetinspectorwidget.h"
+#ifdef WITH_WIDGET3D
 #include "widget3dview.h"
+#endif
 
 #include "common/objectbroker.h"
 #include "common/objectmodel.h"
@@ -131,10 +133,14 @@ WidgetInspectorWidget::~WidgetInspectorWidget()
 
 void WidgetInspectorWidget::onTabChanged(int index)
 {
+#ifdef WITH_WIDGET3D
     if (index == 1 && m_3dView == Q_NULLPTR) {
         m_3dView = new Widget3DView(this);
         ui->widgetExplosionTab->layout()->addWidget(m_3dView);
     }
+#else
+    Q_UNUSED(index)
+#endif
 }
 
 void WidgetInspectorWidget::updateActions()
