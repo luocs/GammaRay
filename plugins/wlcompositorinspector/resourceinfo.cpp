@@ -35,6 +35,8 @@
 #include <QWaylandOutput>
 #include <QMetaEnum>
 
+#include <wayland-server.h>
+
 namespace GammaRay
 {
 

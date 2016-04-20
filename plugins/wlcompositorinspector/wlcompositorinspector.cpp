@@ -49,6 +49,8 @@
 #include "ringbuffer.h"
 #include "resourceinfo.h"
 
+#include <wayland-server.h>
+
 namespace GammaRay
 {
 
