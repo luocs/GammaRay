@@ -31,7 +31,7 @@
 #include <functional>
 
 #include <QWaylandSurface>
-#include <QWaylandShellSurface>
+#include <QWaylandWlShellSurface>
 #include <QWaylandOutput>
 #include <QMetaEnum>
 
@@ -66,7 +66,7 @@ public:
   }
   static void wlshellsurfaceInfo(wl_resource *res, QStringList &lines)
   {
-    QWaylandShellSurface *ss = QWaylandShellSurface::fromResource(res);
+    auto ss = QWaylandWlShellSurface::fromResource(res);
     if (!ss) {
       return;
     }
