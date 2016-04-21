@@ -26,6 +26,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config-gammaray-wayland.h"
 #include "wlcompositorinspector.h"
 
 #include <QAbstractTableModel>
@@ -572,6 +573,7 @@ void WlCompositorInspector::init(QWaylandCompositor *compositor)
     qWarning()<<"found compositor"<<compositor;
     m_compositor = compositor;
 
+#ifdef HAVE_WAYLAND_PROTOCOL_LOGGER
     wl_display *dpy = compositor->display();
     wl_add_protocol_logger(dpy, [](void *ud, wl_resource *res, wl_protocol_logger_direction dir, const char *c) {
         static_cast<WlCompositorInspector *>(ud)->m_logger->add(res, dir == WL_PROTOCOL_LOGGER_INCOMING ? Logger::Direction::In : Logger::Direction::Out, c);
@@ -590,7 +592,7 @@ void WlCompositorInspector::init(QWaylandCompositor *compositor)
         reinterpret_cast<ClientsListener *>(listener)->inspector->addClient(client);
     };
     listener->inspector = this;
-
+#endif
 }
 
 void WlCompositorInspector::addClient(wl_client *c)
