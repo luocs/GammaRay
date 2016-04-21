@@ -26,6 +26,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "config-gammaray-wayland.h"
 #include "resourceinfo.h"
 
 #include <functional>
@@ -54,7 +55,12 @@ public:
 
   Function extractor(wl_resource *res) const
   {
+#ifdef HAVE_WAYLAND_RESOURCE_GET_NTERFACE
     return m_infoExtractors.value(wl_resource_get_interface(res));
+#else
+    Q_UNUSED(res);
+    return nullptr;
+#endif
   }
 
   static void wlsurfaceInfo(wl_resource *res, QStringList &lines)
@@ -112,12 +118,18 @@ uint32_t ResourceInfo::id() const
 
 const wl_interface *ResourceInfo::interface() const
 {
+#ifdef HAVE_WAYLAND_RESOURCE_GET_INTERFACE
   return wl_resource_get_interface(m_resource);
+#else
+  return nullptr;
+#endif
 }
 
 QString ResourceInfo::name() const
 {
-  return QString("%1@%2").arg(interface()->name, QString::number(id()));
+  if (auto iface = interface())
+    return QString("%1@%2").arg(iface->name, QString::number(id()));
+  return QStringLiteral("Missing wl_resource_get_interface.");
 }
 
 QString ResourceInfo::info() const

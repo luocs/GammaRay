@@ -9,6 +9,7 @@ if(Qt5WaylandCompositor_FOUND)
   set(CMAKE_REQUIRED_INCLUDES ${Wayland_INCLUDE_DIRS})
   set(CMAKE_REQUIRED_LIBRARIES Wayland::Server)
   check_symbol_exists(wl_add_protocol_logger "wayland-server.h" HAVE_WAYLAND_PROTOCOL_LOGGER)
+  check_symbol_exists(wl_resource_get_interface "wayland-server.h" HAVE_WAYLAND_RESOURCE_GET_INTERFACE)
   cmake_pop_check_state()
   configure_file(config-gammaray-wayland.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-gammaray-wayland.h)
 
