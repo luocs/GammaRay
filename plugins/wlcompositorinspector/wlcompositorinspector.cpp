@@ -235,6 +235,7 @@ public:
 
         m_client = client;
         if (client) {
+#ifdef HAVE_WAYLAND_CLIENT_ADD_RESOURCE_CREATED_LISTENER
             wl_client_add_resource_created_listener(client->client(), &m_listener.l);
             m_listener.m = this;
             m_listener.l.notify = [](wl_listener *listener, void *data) {
@@ -242,11 +243,14 @@ public:
                 ResourcesModel *model = reinterpret_cast<ClientListener *>(listener)->m;
                 model->addResource(resource);
             };
+#endif
 
+#ifdef HAVE_WAYLAND_CLIENT_FOR_EACH_RESOURCE
             wl_client_for_each_resource(client->client(), [](wl_resource *res, void *ud) {
                 ResourcesModel *model = static_cast<ResourcesModel *>(ud);
                 model->addResource(res);
             }, this);
+#endif
         }
     }
 
@@ -573,12 +577,14 @@ void WlCompositorInspector::init(QWaylandCompositor *compositor)
     qWarning()<<"found compositor"<<compositor;
     m_compositor = compositor;
 
-#ifdef HAVE_WAYLAND_PROTOCOL_LOGGER
     wl_display *dpy = compositor->display();
+#ifdef HAVE_WAYLAND_PROTOCOL_LOGGER
     wl_add_protocol_logger(dpy, [](void *ud, wl_resource *res, wl_protocol_logger_direction dir, const char *c) {
         static_cast<WlCompositorInspector *>(ud)->m_logger->add(res, dir == WL_PROTOCOL_LOGGER_INCOMING ? Logger::Direction::In : Logger::Direction::Out, c);
     }, this);
+#endif
 
+#ifdef HAVE_WAYLAND_DISPLAY_GET_CLIENT_LIST
     wl_list *clients = wl_display_get_client_list(dpy);
     wl_client *client;
     wl_client_for_each(client, clients) {
