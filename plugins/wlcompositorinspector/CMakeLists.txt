@@ -13,6 +13,7 @@ if(Qt5WaylandCompositor_FOUND)
   check_symbol_exists(wl_client_add_resource_created_listener "wayland-server.h" HAVE_WAYLAND_CLIENT_ADD_RESOURCE_CREATED_LISTENER)
   check_symbol_exists(wl_client_for_each_resource "wayland-server.h" HAVE_WAYLAND_CLIENT_FOR_EACH_RESOURCE)
   check_symbol_exists(wl_display_get_client_list "wayland-server.h" HAVE_WAYLAND_DISPLAY_GET_CLIENT_LIST)
+  check_symbol_exists(wl_display_add_client_created_listener "wayland-server.h" HAVE_WAYLAND_DISPLAY_ADD_CLIENT_CREATED_LISTENER)
   cmake_pop_check_state()
   configure_file(config-gammaray-wayland.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-gammaray-wayland.h)
 

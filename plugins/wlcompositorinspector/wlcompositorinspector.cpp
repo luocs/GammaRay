@@ -590,7 +590,9 @@ void WlCompositorInspector::init(QWaylandCompositor *compositor)
     wl_client_for_each(client, clients) {
         addClient(client);
     }
+#endif
 
+#ifdef HAVE_WAYLAND_DISPLAY_ADD_CLIENT_CREATED_LISTENER
     ClientsListener *listener = new ClientsListener;
     wl_display_add_client_created_listener(dpy, &listener->listener);
     listener->listener.notify = [](wl_listener *listener, void *data) {
