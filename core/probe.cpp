@@ -201,6 +201,7 @@ struct Listener
 
   bool trackDestroyed;
   QVector<QObject*> addedBeforeProbeInstance;
+  QHash<QObject *, backward::StackTrace> constructionBacktracesForObjects;
 };
 
 Q_GLOBAL_STATIC(Listener, s_listener)
@@ -552,6 +553,7 @@ void Probe::objectAdded(QObject *obj, bool fromCtor)
 {
   QMutexLocker lock(s_lock());
 
+
   // attempt to ignore objects created by GammaRay itself, especially short-lived ones
   if (fromCtor && ProbeGuard::insideProbe() && obj->thread() == QThread::currentThread()) {
     return;
@@ -563,6 +565,10 @@ void Probe::objectAdded(QObject *obj, bool fromCtor)
       return;
   }
 #endif
+
+  if (fromCtor) {
+    s_listener()->constructionBacktracesForObjects[obj].load_here(32);
+  }
 
   if (!isInitialized()) {
     IF_DEBUG(cout
@@ -1022,4 +1028,42 @@ void Probe::executeSignalCallback(const Func &func)
   std::for_each(instance()->m_signalSpyCallbacks.constBegin(),
                 instance()->m_signalSpyCallbacks.constEnd(),
                 func);
+}
+
+SourceLocation Probe::objectCreationSourceLocation(QObject* object)
+{
+  if (!s_listener()->constructionBacktracesForObjects.contains(object)) {
+    IF_DEBUG(std::cout << "No backtrace for object available for object" << object << "." << std::endl;)
+    return SourceLocation();
+  }
+
+  backward::StackTrace &st = s_listener()->constructionBacktracesForObjects[object];
+  int distanceToQObject = 0;
+  m_traceResolver.load_stacktrace(st);
+
+  const QMetaObject *metaObject = object->metaObject();
+  while (metaObject && metaObject != &QObject::staticMetaObject) {
+    distanceToQObject++;
+    metaObject = metaObject->superClass();
+  }
+
+  IF_DEBUG(std::cout << " - Distance: " << distanceToQObject << std::endl;
+    for (size_t i = 4; i < (uint)6 + distanceToQObject; ++i) {
+        backward::ResolvedTrace trace = m_traceResolver.resolve(st[i]);
+        std::cout << "#" << i
+            << " " << trace.object_function
+            << " " << trace.source.filename
+            << ":" << trace.source.line
+            << ":" << trace.source.col
+        << std::endl;
+    })
+
+  backward::ResolvedTrace trace = m_traceResolver.resolve(st[4 + distanceToQObject + 1]);
+
+  SourceLocation loc;
+  loc.setUrl(QUrl::fromLocalFile(QString::fromStdString(trace.source.filename)));
+  loc.setLine(trace.source.line);
+  loc.setColumn(trace.source.col);
+
+  return loc;
 }

@@ -33,6 +33,10 @@
 #include "probeinterface.h"
 #include "signalspycallbackset.h"
 
+#include <common/sourcelocation.h>
+
+#include <3rdparty/backward-cpp/backward.hpp>
+
 #include <QObject>
 #include <QList>
 #include <QSet>
@@ -89,6 +93,8 @@ class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
     void selectObject(QObject* object, const QString toolId, const QPoint& pos = QPoint()) Q_DECL_OVERRIDE;
     void selectObject(void* object, const QString& typeName) Q_DECL_OVERRIDE;
     void registerSignalSpyCallbackSet(const SignalSpyCallbackSet& callbacks) Q_DECL_OVERRIDE;
+
+    SourceLocation objectCreationSourceLocation(QObject *object);
 
     QObject *window() const;
     void setWindow(QObject *window);
@@ -223,6 +229,7 @@ class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
     QVector<SignalSpyCallbackSet> m_signalSpyCallbacks;
     SignalSpyCallbackSet m_previousSignalSpyCallbackSet;
     Server *m_server;
+    backward::TraceResolver m_traceResolver;
 };
 
 }
