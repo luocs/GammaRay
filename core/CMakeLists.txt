@@ -15,6 +15,7 @@ set(gammaray_srcs
   objectmethodmodel.cpp
   objectenummodel.cpp
   objecttreemodel.cpp
+  objectidfilterproxymodel.cpp
   objecttypefilterproxymodel.cpp
   methodargumentmodel.cpp
   multisignalmapper.cpp

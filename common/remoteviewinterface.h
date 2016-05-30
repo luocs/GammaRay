@@ -31,6 +31,8 @@
 
 #include "gammaray_common_export.h"
 
+#include "probecontrollerinterface.h"
+
 #include <QObject>
 #include <QPoint>
 
@@ -43,12 +45,18 @@ class GAMMARAY_COMMON_EXPORT RemoteViewInterface : public QObject
 {
     Q_OBJECT
 public:
+    enum RequestMode {
+        RequestBest,
+        RequestAll
+    };
+
     explicit RemoteViewInterface(const QString &name, QObject* parent = Q_NULLPTR);
 
     QString name() const;
 
 public slots:
-    virtual void pickElementAt(const QPoint &pos) = 0;
+    virtual void requestElementsAt(const QPoint &pos, GammaRay::RemoteViewInterface::RequestMode mode) = 0;
+    virtual void pickElementId(const GammaRay::ObjectId &id) = 0;
 
     virtual void sendKeyEvent(int type, int key, int modifiers,
                               const QString &text = QString(),
@@ -67,15 +75,31 @@ public slots:
 
 signals:
     void reset();
+    void elementsAtReceived(const GammaRay::ObjectIds &ids, int bestCandidate);
     void frameUpdated(const GammaRay::RemoteViewFrame &frame);
 
 private:
     QString m_name;
 };
 
+inline QDataStream &operator<<(QDataStream &out, RemoteViewInterface::RequestMode mode)
+{
+  out << static_cast<quint8>(mode);
+  return out;
+}
+
+inline QDataStream &operator>>(QDataStream &in, RemoteViewInterface::RequestMode &mode)
+{
+  quint8 u;
+  in >> u;
+  mode = static_cast<RemoteViewInterface::RequestMode>(u);
+  return in;
+}
+
 }
 
 QT_BEGIN_NAMESPACE
+Q_DECLARE_METATYPE(GammaRay::RemoteViewInterface::RequestMode)
 Q_DECLARE_INTERFACE(GammaRay::RemoteViewInterface, "com.kdab.GammaRay.RemoteViewInterface/1.0")
 QT_END_NAMESPACE
 

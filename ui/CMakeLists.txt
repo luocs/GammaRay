@@ -9,6 +9,7 @@ set(gammaray_ui_srcs
   editabletypesmodel.cpp
   itemdelegate.cpp
   methodinvocationdialog.cpp
+  modelpickerdialog.cpp
   palettemodel.cpp
   propertybinder.cpp
   propertywidget.cpp
@@ -122,7 +123,7 @@ endif(HAVE_PRIVATE_QT_HEADERS)
 
 target_link_libraries(gammaray_ui
   LINK_PUBLIC ${QT_QTCORE_LIBRARIES} ${QT_QTGUI_LIBRARIES} gammaray_common
-  LINK_PRIVATE gammaray_common_internal gammaray_kitemmodels
+  LINK_PRIVATE gammaray_common_internal gammaray_kitemmodels gammaray_core
 )
 
 set(gammaray_ui_internal_srcs
