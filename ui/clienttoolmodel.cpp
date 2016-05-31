@@ -111,10 +111,18 @@ static void initPluginRepository()
 }
 
 
-ClientToolModel::ClientToolModel(QObject* parent) : QSortFilterProxyModel(parent)
+ClientToolModel::ClientToolModel(QAbstractItemModel *sourceModel, QObject* parent) : QSortFilterProxyModel(parent)
 {
   setDynamicSortFilter(true);
   initPluginRepository();
+
+  QSortFilterProxyModel::setSourceModel(sourceModel);
+  connect(sourceModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(updateToolInitialization(QModelIndex,QModelIndex)));
+
+  // Force sourceModel to fetch ToolEnabled for every tool. Data is used as soon as available.
+  for (int i = 0; i <= sourceModel->rowCount(); i++) {
+    sourceModel->index(i, 0).data(ToolModelRole::ToolEnabled).toBool();
+  }
 }
 
 ClientToolModel::~ClientToolModel()
@@ -133,19 +141,7 @@ QVariant ClientToolModel::data(const QModelIndex& index, int role) const
     if (role == ToolModelRole::ToolFactory)
       return QVariant::fromValue(s_pluginRepository()->factories.value(toolId));
     if (role == ToolModelRole::ToolWidget) {
-      const WidgetsHash::const_iterator it = m_widgets.constFind(toolId);
-      if (it != m_widgets.constEnd() && it.value())
-        return QVariant::fromValue<QWidget*>(it.value());
-      ToolUiFactory *factory = s_pluginRepository()->factories.value(toolId);
-      if (!factory)
-        return QVariant();
-      if (s_pluginRepository()->inactiveTools.contains(factory)) {
-        factory->initUi();
-        s_pluginRepository()->inactiveTools.remove(factory);
-      }
-      QWidget *widget = factory->createWidget(m_parentWidget);
-      m_widgets.insert(toolId, widget);
-      return QVariant::fromValue(widget);
+      return QVariant::fromValue(widgetForId(toolId));
     }
     if (role == Qt::ToolTipRole) {
       ToolUiFactory *factory = s_pluginRepository()->factories.value(toolId);
@@ -184,10 +180,22 @@ Qt::ItemFlags ClientToolModel::flags(const QModelIndex &index) const
   return ret;
 }
 
-void ClientToolModel::setSourceModel(QAbstractItemModel *sourceModel)
+QPointer<QWidget> GammaRay::ClientToolModel::widgetForId(const QString toolId) const
 {
-    QSortFilterProxyModel::setSourceModel(sourceModel);
-    connect(sourceModel, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(updateToolInitialization(QModelIndex,QModelIndex)));
+  const WidgetsHash::const_iterator it = m_widgets.constFind(toolId);
+  if (it != m_widgets.constEnd() && it.value())
+    return it.value();
+  ToolUiFactory *factory = s_pluginRepository()->factories.value(toolId);
+  if (!factory)
+    return 0;
+  if (s_pluginRepository()->inactiveTools.contains(factory)) {
+    return 0;
+//     factory->initUi();
+//     s_pluginRepository()->inactiveTools.remove(factory);
+  }
+  QWidget *widget = factory->createWidget(m_parentWidget);
+  m_widgets.insert(toolId, widget);
+  return widget;
 }
 
 bool ClientToolModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
@@ -211,6 +219,7 @@ void ClientToolModel::updateToolInitialization(const QModelIndex& topLeft, const
       if (factory && (factory->remotingSupported() || !Endpoint::instance()->isRemoteClient()) && s_pluginRepository()->inactiveTools.contains(factory)) {
         factory->initUi();
         s_pluginRepository()->inactiveTools.remove(factory);
+        emit toolAvailable(toolId);
       }
     }
   }

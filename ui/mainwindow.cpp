@@ -157,9 +157,8 @@ MainWindow::MainWindow(QWidget *parent)
   setWindowIcon(QIcon(QStringLiteral(":gammaray/GammaRay-128x128.png")));
 
   QAbstractItemModel *model = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.ToolModel"));
-  ClientToolModel *toolModel = new ClientToolModel(this);
+  ClientToolModel *toolModel = new ClientToolModel(model, this);
   toolModel->setData(QModelIndex(), QVariant::fromValue<QWidget*>(this), ToolModelRole::ToolWidgetParent);
-  toolModel->setSourceModel(model);
   ui->toolSelector->setModel(toolModel);
   QItemSelectionModel *selectionModel = ObjectBroker::selectionModel(toolModel);
   ui->toolSelector->setSelectionModel(selectionModel);

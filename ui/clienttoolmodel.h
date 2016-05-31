@@ -52,14 +52,17 @@ class GAMMARAY_UI_EXPORT ClientToolModel : public QSortFilterProxyModel
 {
   Q_OBJECT
 public:
-  explicit ClientToolModel(QObject* parent = 0);
+  explicit ClientToolModel(QAbstractItemModel * sourceModel, QObject* parent = 0);
   ~ClientToolModel();
 
   QVariant data(const QModelIndex& index, int role) const Q_DECL_OVERRIDE;
   bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) Q_DECL_OVERRIDE;
   Qt::ItemFlags flags(const QModelIndex &index) const Q_DECL_OVERRIDE;
 
-  void setSourceModel(QAbstractItemModel * sourceModel) Q_DECL_OVERRIDE;
+  QPointer<QWidget> widgetForId(const QString toolId) const;
+
+signals:
+  void toolAvailable(const QString &toolId);
 
 protected:
   bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const Q_DECL_OVERRIDE;
