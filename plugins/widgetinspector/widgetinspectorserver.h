@@ -31,6 +31,7 @@
 #define GAMMARAY_WIDGETINSPECTOR_WIDGETINSPECTORSERVER_H
 
 #include <widgetinspectorinterface.h>
+#include <common/remoteviewinterface.h>
 
 #include <QPointer>
 
@@ -49,6 +50,8 @@ class PropertyController;
 class OverlayWidget;
 class PaintAnalyzer;
 class RemoteViewServer;
+class ObjectId;
+typedef QVector<ObjectId> ObjectIds;
 
 class WidgetInspectorServer : public WidgetInspectorInterface
 {
@@ -58,10 +61,15 @@ class WidgetInspectorServer : public WidgetInspectorInterface
     explicit WidgetInspectorServer(ProbeInterface *probe, QObject *parent = 0);
     ~WidgetInspectorServer();
 
+  signals:
+    void elementsAtReceived(const GammaRay::ObjectIds &ids, int bestCandidate);
+
   protected:
     bool eventFilter(QObject *object, QEvent *event) Q_DECL_OVERRIDE;
 
   private:
+    GammaRay::ObjectIds recursiveWidgetsAt(QWidget *parent, const QPoint &pos,
+                                           GammaRay::RemoteViewInterface::RequestMode mode, int& bestCandidate) const;
     void callExternalExportAction(const char *name, QWidget *widget, const QString &fileName);
     QImage imageForWidget(QWidget *widget);
     void registerWidgetMetaTypes();
@@ -85,7 +93,9 @@ class WidgetInspectorServer : public WidgetInspectorInterface
     void analyzePainting() Q_DECL_OVERRIDE;
 
     void updateWidgetPreview();
-    void pickElement(const QPoint &pos);
+
+    void requestElementsAt(const QPoint &pos, GammaRay::RemoteViewInterface::RequestMode mode);
+    void pickElementId(const GammaRay::ObjectId& id);
 
   private:
     QPointer<OverlayWidget> m_overlayWidget;

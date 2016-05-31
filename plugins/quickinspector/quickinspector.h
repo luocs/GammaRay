@@ -31,6 +31,7 @@
 
 #include "quickinspectorinterface.h"
 
+#include <common/remoteviewinterface.h>
 #include <core/toolfactory.h>
 
 #include <QQuickWindow>
@@ -56,6 +57,8 @@ class PropertyController;
 class QuickItemModel;
 class QuickSceneGraphModel;
 class RemoteViewServer;
+class ObjectId;
+typedef QVector<ObjectId> ObjectIds;
 
 class QuickInspector : public QuickInspectorInterface
 {
@@ -68,6 +71,9 @@ class QuickInspector : public QuickInspectorInterface
 
     typedef bool (*GrabWindowCallback)(QQuickWindow*);
 
+  signals:
+    void elementsAtReceived(const GammaRay::ObjectIds &ids, int bestCandidate);
+
   public slots:
     void selectWindow(int index) Q_DECL_OVERRIDE;
 
@@ -75,7 +81,8 @@ class QuickInspector : public QuickInspectorInterface
 
     void checkFeatures() Q_DECL_OVERRIDE;
 
-    void pickItemAt(const QPoint& pos);
+    void requestElementsAt(const QPoint &pos, GammaRay::RemoteViewInterface::RequestMode mode);
+    void pickElementId(const GammaRay::ObjectId& id);
 
     /** Allow other plugins to provide specific window grabbing callbacks.
      *  Needed for QQuickWidget.
@@ -105,7 +112,8 @@ class QuickInspector : public QuickInspectorInterface
     void registerPCExtensions();
     QString findSGNodeType(QSGNode *node) const;
 
-    QQuickItem *recursiveChiltAt(QQuickItem *parent, const QPointF &pos) const;
+    GammaRay::ObjectIds recursiveItemsAt(QQuickItem *parent, const QPointF &pos,
+                                         GammaRay::RemoteViewInterface::RequestMode mode, int& bestCandidate) const;
 
     ProbeInterface *m_probe;
     QPointer<QQuickWindow> m_window;

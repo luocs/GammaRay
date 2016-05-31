@@ -35,6 +35,7 @@
 
 #include <common/modelevent.h>
 #include <common/objectbroker.h>
+#include <common/probecontrollerinterface.h>
 #include <common/remoteviewframe.h>
 
 #include <core/metaobject.h>
@@ -228,6 +229,17 @@ static QString qsgTextureWrapModeToString(QSGTexture::WrapMode wrapMode)
   return QStringLiteral("Unknown: %1").arg(wrapMode);
 }
 
+static bool qGoodCandidateItem(QQuickItem *item)
+{
+  if (!item->isVisible() || qFuzzyCompare(item->opacity() + 1.0, qreal(1.0)) ||
+          !item->flags().testFlag(QQuickItem::ItemHasContents) ||
+          item->metaObject() == &QQuickItem::staticMetaObject) {
+    return false;
+  }
+
+  return true;
+}
+
 QuickInspector::QuickInspector(ProbeInterface *probe, QObject *parent)
   : QuickInspectorInterface(parent),
     m_probe(probe),
@@ -278,7 +290,9 @@ QuickInspector::QuickInspector(ProbeInterface *probe, QObject *parent)
           this, &QuickInspector::sgSelectionChanged);
   connect(m_sgModel, &QuickSceneGraphModel::nodeDeleted, this, &QuickInspector::sgNodeDeleted);
 
-  connect(m_remoteView, &RemoteViewServer::doPickElement, this, &QuickInspector::pickItemAt);
+  connect(m_remoteView, &RemoteViewServer::elementsAtRequested, this, &QuickInspector::requestElementsAt);
+  connect(this, &QuickInspector::elementsAtReceived, m_remoteView, &RemoteViewServer::elementsAtReceived);
+  connect(m_remoteView, &RemoteViewServer::doPickElementId, this, &QuickInspector::pickElementId);
   connect(m_remoteView, &RemoteViewServer::requestUpdate, this, &QuickInspector::slotGrabWindow);
 }
 
@@ -295,6 +309,10 @@ void QuickInspector::selectWindow(int index)
 
 void QuickInspector::selectWindow(QQuickWindow *window)
 {
+  if (m_window == window) {
+      return;
+  }
+
   if (m_window) {
     disconnect(m_window, 0, this, 0);
   }
@@ -567,46 +585,82 @@ void QuickInspector::sgNodeDeleted(QSGNode *node)
   }
 }
 
-void QuickInspector::pickItemAt(const QPoint& pos)
+void QuickInspector::requestElementsAt(const QPoint &pos, GammaRay::RemoteViewInterface::RequestMode mode)
 {
   if (!m_window)
     return;
-  QQuickItem *item = recursiveChiltAt(m_window->contentItem(), pos);
+
+  int bestCandidate;
+  const ObjectIds objects = recursiveItemsAt(m_window->contentItem(), pos, mode, bestCandidate);
+
+  if (!objects.isEmpty()) {
+    emit elementsAtReceived(objects, bestCandidate);
+  }
+}
+
+void QuickInspector::pickElementId(const GammaRay::ObjectId &id)
+{
+  QQuickItem *item = id.asQObjectType<QQuickItem *>();
   if (item)
     m_probe->selectObject(item);
 }
 
-QQuickItem *QuickInspector::recursiveChiltAt(QQuickItem *parent, const QPointF &pos) const
+ObjectIds QuickInspector::recursiveItemsAt(QQuickItem *parent, const QPointF &pos,
+                                           GammaRay::RemoteViewInterface::RequestMode mode, int &bestCandidate) const
 {
   Q_ASSERT(parent);
-  QQuickItem *child = Q_NULLPTR;
+  ObjectIds objects;
 
-  // almost like QQItem::childAt, but with some extra filtering for better matching what you can see on screen
+  bestCandidate = -1;
+
   const auto childItems = parent->childItems();
   for (int i = childItems.size() - 1; i >= 0; --i) { // backwards to match z order
-      auto c = childItems.at(i);
-      const QPointF p = parent->mapToItem(c, pos);
-      if (c->isVisible() && p.x() >= 0 && c->width() >= p.x() && p.y() >= 0 && c->height() >= p.y()) {
-          child = c;
-          // empty QQItems are less interesting, so continue looking for something better, very common first hits in ListViews for example
-          if (c->metaObject() == &QQuickItem::staticMetaObject && c->childItems().isEmpty()) {
-              continue;
-          }
-          break;
+    auto c = childItems.at(i);
+    const QPointF p = parent->mapToItem(c, pos);
+    if (c->contains(p)) {
+      const bool hasSubChildren = !c->childItems().isEmpty();
+
+      if (hasSubChildren) {
+        const int count = objects.count();
+        int bc;
+        objects << recursiveItemsAt(c, p, mode, bc);
+
+        if (bestCandidate == -1 && bc != -1) {
+          bestCandidate = count + bc;
+        }
       }
+      else {
+        if (bestCandidate == -1 && qGoodCandidateItem(c)) {
+          bestCandidate = objects.count();
+        }
+
+        objects << ObjectId(c);
+      }
+    }
+
+    if (bestCandidate != -1 && mode == RemoteViewInterface::RequestBest) {
+      break;
+    }
   }
 
-  if (child) {
-    return recursiveChiltAt(child, parent->mapToItem(child, pos));
+  if (bestCandidate == -1 && qGoodCandidateItem(parent)) {
+    bestCandidate = objects.count();
   }
-  return parent;
+
+  objects << ObjectId(parent);
+
+  if (bestCandidate != -1 && mode == RemoteViewInterface::RequestBest) {
+    objects = ObjectIds() << objects[bestCandidate];
+    bestCandidate = 0;
+  }
+
+  return objects;
 }
 
 void GammaRay::QuickInspector::registerGrabWindowCallback(GrabWindowCallback callback)
 {
-    m_grabWindowCallbacks.push_back(callback);
+  m_grabWindowCallbacks.push_back(callback);
 }
-
 
 bool QuickInspector::eventFilter(QObject *receiver, QEvent *event)
 {
@@ -616,8 +670,10 @@ bool QuickInspector::eventFilter(QObject *receiver, QEvent *event)
         mouseEv->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier)) {
       QQuickWindow *window = qobject_cast<QQuickWindow*>(receiver);
       if (window && window->contentItem()) {
-        QQuickItem *item = recursiveChiltAt(window->contentItem(), mouseEv->pos());
-        m_probe->selectObject(item);
+        int bestCandidate;
+        const ObjectIds objects = recursiveItemsAt(window->contentItem(), mouseEv->pos(),
+                                                   RemoteViewInterface::RequestBest, bestCandidate);
+        m_probe->selectObject(objects.value(bestCandidate == -1 ? 0 : bestCandidate).asQObject());
       }
     }
   }

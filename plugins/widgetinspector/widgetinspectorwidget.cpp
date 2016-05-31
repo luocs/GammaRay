@@ -81,6 +81,7 @@ WidgetInspectorWidget::WidgetInspectorWidget(QWidget *parent)
   connect(ui->widgetTreeView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(widgetTreeContextMenu(QPoint)));
 
   m_remoteView->setName(QStringLiteral("com.kdab.GammaRay.WidgetRemoteView"));
+  m_remoteView->setPickSourceModel(widgetModel);
 
   auto layout = new QVBoxLayout;
   layout->setMargin(0);
