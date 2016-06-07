@@ -48,7 +48,7 @@ class ToolUiFactory;
  *
  *  This is needed when implementing your own client UI embedded into a different application.
  */
-class GAMMARAY_UI_EXPORT ClientToolModel : public QSortFilterProxyModel
+class GAMMARAY_UI_EXPORT ClientToolModel : public QAbstractItemModel
 {
   Q_OBJECT
 public:
@@ -73,7 +73,7 @@ private slots:
 private:
   typedef QHash<QString, QPointer<QWidget>> WidgetsHash;
   mutable WidgetsHash m_widgets; // ToolId -> Widget
-  QPointer<QWidget> m_parentWidget;
+  ProbeControllerInterface *m_probeController;
 };
 
 }

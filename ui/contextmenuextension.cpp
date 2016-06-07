@@ -33,6 +33,7 @@
 #include <common/propertymodel.h>
 
 #include <QMenu>
+#include <QModelIndex>
 
 using namespace GammaRay;
 

@@ -32,6 +32,8 @@
 #include "gammaray_core_export.h"
 #include "probeinterface.h"
 #include "signalspycallbackset.h"
+#include <common/pluginmanager.h>
+
 
 #include <QObject>
 #include <QList>
@@ -53,10 +55,13 @@ class ProbeCreator;
 class MetaObjectTreeModel;
 class ObjectListModel;
 class ObjectTreeModel;
-class ToolModel;
 class MainWindow;
 class BenchSuite;
 class Server;
+class ToolFactory;
+class ProxyToolFactory;
+
+typedef PluginManager<ToolFactory, ProxyToolFactory> ToolPluginManager;
 
 class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
 {
@@ -80,7 +85,7 @@ class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
     QAbstractItemModel *objectListModel() const Q_DECL_OVERRIDE;
     QAbstractItemModel *objectTreeModel() const Q_DECL_OVERRIDE;
     QAbstractItemModel *metaObjectModel() const;
-    ToolModel *toolModel() const;
+    ToolPluginManager *toolPluginManager() const;
     void registerModel(const QString& objectName, QAbstractItemModel* model) Q_DECL_OVERRIDE;
     void installGlobalEventFilter(QObject* filter) Q_DECL_OVERRIDE;
     bool needsObjectDiscovery() const Q_DECL_OVERRIDE;
@@ -109,6 +114,13 @@ class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
     bool isValidObject(QObject *obj) const;
 
     bool filterObject(QObject *obj) const Q_DECL_OVERRIDE;
+
+    const QVector<ToolFactory*> tools() const;
+    bool isToolEnabled(ToolFactory *tool) const;
+    /** returns the tools that are best suited to show information about \p object. */
+    const QVector<ToolFactory*> toolsForObject(QObject *object) const;
+    /** returns the tools that are best suited to show information about \p object. */
+    const QVector<ToolFactory*> toolsForObject(const void *object, const QString &typeName) const;
 
     /// internal
     static void startupHookReceived();
@@ -155,6 +167,16 @@ class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
     void objectDestroyed(QObject *obj);
     void objectReparented(QObject *obj);
 
+    /**
+     * Emitted when a new tool was enabled.
+     * This happens when an object was created that is supported by a priorly disabled tool
+     */
+    void toolEnabled(const QString &toolId);
+    /**
+     * Emitted when a tool was selected.
+     */
+    void toolSelected(const QString &toolId);
+
   protected:
     bool eventFilter(QObject *receiver, QEvent *event) Q_DECL_OVERRIDE;
 
@@ -199,10 +221,13 @@ class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
     /** Set up all needed signal spy callbacks. */
     void setupSignalSpyCallbacks();
 
+    void addToolFactory(ToolFactory* tool);
+    void searchToolToEnable(const QMetaObject *mo);
+
     ObjectListModel *m_objectListModel;
     ObjectTreeModel *m_objectTreeModel;
     MetaObjectTreeModel *m_metaObjectTreeModel;
-    ToolModel *m_toolModel;
+//     ToolModel *m_toolModel;
     QItemSelectionModel *m_toolSelectionModel;
     QObject *m_window;
     QSet<QObject*> m_validObjects;
@@ -223,6 +248,12 @@ class GAMMARAY_CORE_EXPORT Probe : public QObject, public ProbeInterface
     QVector<SignalSpyCallbackSet> m_signalSpyCallbacks;
     SignalSpyCallbackSet m_previousSignalSpyCallbackSet;
     Server *m_server;
+
+
+    QVector<ToolFactory*> m_tools;
+    QSet<ToolFactory*> m_disabledTools;
+    QSet<const QMetaObject*> m_knownMetaObjects;
+    QScopedPointer<ToolPluginManager> m_toolPluginManager;
 };
 
 }

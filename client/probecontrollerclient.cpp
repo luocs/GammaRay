@@ -49,6 +49,18 @@ void ProbeControllerClient::requestSupportedTools(ObjectId id)
                                      QVariantList() << QVariant::fromValue(id));
 }
 
+void ProbeControllerClient::requestEnabledTools()
+{
+  Endpoint::instance()->invokeObject(objectName(), "requestEnabledTools");
+}
+
+
+void ProbeControllerClient::selectTool(const QString &toolId)
+{
+  Endpoint::instance()->invokeObject(objectName(), "selectTool",
+                                     QVariantList() << QVariant::fromValue(toolId));
+}
+
 void ProbeControllerClient::detachProbe()
 {
   Endpoint::instance()->invokeObject(objectName(), "detachProbe");

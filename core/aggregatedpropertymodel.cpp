@@ -34,7 +34,6 @@
 #include "propertydata.h"
 #include "propertyadaptorfactory.h"
 #include "toolfactory.h"
-#include "toolmodel.h"
 #include "varianthandler.h"
 #include "util.h"
 

@@ -97,7 +97,7 @@ ClientConnectionManager::ClientConnectionManager(QObject* parent, bool showSplas
   QObject(parent),
   m_client(new Client(this)),
   m_mainWindow(0),
-  m_toolModel(0),
+//   m_toolModel(0),
   m_ignorePersistentError(false),
   m_tries(0)
 {
@@ -140,25 +140,26 @@ void ClientConnectionManager::connectToHost()
 
 void ClientConnectionManager::connectionEstablished()
 {
-  m_toolModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.ToolModel"));
+//   m_toolModel = ObjectBroker::model(QStringLiteral("com.kdab.GammaRay.ToolModel"));
 
-  if (m_toolModel->rowCount() <= 0) {
-    connect(m_toolModel, SIGNAL(rowsInserted(QModelIndex,int,int)), SLOT(toolModelPopulated()));
-    connect(m_toolModel, SIGNAL(layoutChanged()), SLOT(toolModelPopulated()));
-    connect(m_toolModel, SIGNAL(modelReset()), SLOT(toolModelPopulated()));
-  } else {
-    toolModelPopulated();
-  }
+//   if (m_toolModel->rowCount() <= 0) {
+//     connect(m_toolModel, SIGNAL(rowsInserted(QModelIndex,int,int)), SLOT(toolModelPopulated()));
+//     connect(m_toolModel, SIGNAL(layoutChanged()), SLOT(toolModelPopulated()));
+//     connect(m_toolModel, SIGNAL(modelReset()), SLOT(toolModelPopulated()));
+//   } else {
+//     toolModelPopulated();
+//   }
+    emit ready();
 }
 
 void ClientConnectionManager::toolModelPopulated()
 {
-  if (m_toolModel->rowCount() <= 0)
-    return;
+//   if (m_toolModel->rowCount() <= 0)
+//     return;
 
-  disconnect(m_toolModel, 0, this, 0);
-  QTimer::singleShot(0, this, SLOT(delayedHideSplashScreen()));
+//   disconnect(m_toolModel, 0, this, 0);
   emit ready();
+  QTimer::singleShot(0, this, SLOT(delayedHideSplashScreen()));
 }
 
 QMainWindow *ClientConnectionManager::createMainWindow()

@@ -28,7 +28,7 @@
 
 #include "probecontroller.h"
 
-#include "toolmodel.h"
+#include "toolfactory.h"
 #include "probe.h"
 
 #include <QDebug>
@@ -63,7 +63,7 @@ void ProbeController::selectObject(ObjectId id, const QString &toolId)
 
 void ProbeController::requestSupportedTools(ObjectId id)
 {
-  QModelIndexList indexes;
+  QVector<ToolFactory*> factories;
   switch (id.type()) {
   case ObjectId::Invalid:
     return;
@@ -72,25 +72,39 @@ void ProbeController::requestSupportedTools(ObjectId id)
     if (!Probe::instance()->isValidObject(id.asQObject()))
       return;
 
-    indexes = Probe::instance()->toolModel()->toolsForObject(id.asQObject());
+    factories = Probe::instance()->toolsForObject(id.asQObject());
     break;
   }
   case ObjectId::VoidStarType:
     const auto asVoidStar = reinterpret_cast<void *>(id.id());
-    indexes = Probe::instance()->toolModel()->toolsForObject(asVoidStar, id.typeName());
+    factories = Probe::instance()->toolsForObject(asVoidStar, id.typeName());
     break;
   }
 
   ToolInfos toolInfos;
-  toolInfos.reserve(indexes.size());
-  foreach (const auto &index, indexes) {
+  toolInfos.reserve(factories.size());
+  foreach (ToolFactory *factory, factories) {
     ToolInfo info;
-    info.id = index.data(ToolModelRole::ToolId).toString();
-    info.name =  index.data(Qt::DisplayRole).toString();
+    info.id = factory->id();
+    info.name =  factory->name();
+    info.hasUi = !factory->isHidden();
     toolInfos.push_back(info);
   }
   emit supportedToolsResponse(id, toolInfos);
 }
+
+
+void ProbeController::requestEnabledTools()
+{
+
+}
+
+
+void ProbeController::selectTool(const QString &toolId)
+{
+
+}
+
 
 void ProbeController::detachProbe()
 {

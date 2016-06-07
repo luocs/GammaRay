@@ -93,6 +93,7 @@ struct ToolInfo
 {
   QString id;
   QString name;
+  bool hasUi;
 };
 typedef QVector<ToolInfo> ToolInfos;
 
@@ -109,6 +110,10 @@ public:
 
   virtual void requestSupportedTools(ObjectId id) = 0;
 
+  virtual void requestEnabledTools() = 0;
+
+  virtual void selectTool(const QString &toolId) = 0;
+
   /** Terminate host application. */
   virtual void quitHost() = 0;
 
@@ -117,6 +122,9 @@ public:
 
 Q_SIGNALS:
   void supportedToolsResponse(GammaRay::ObjectId id, const GammaRay::ToolInfos& toolInfos);
+  void enabledToolsResponse(const GammaRay::ToolInfos& toolInfos);
+  void toolEnabled(const QString &toolId);
+  void toolSelected(const QString &toolId);
 
 private:
   Q_DISABLE_COPY(ProbeControllerInterface)
@@ -150,6 +158,7 @@ inline QDataStream &operator<<(QDataStream &out, const ToolInfo &toolInfo)
 {
   out << toolInfo.id;
   out << toolInfo.name;
+  out << toolInfo.hasUi;
   return out;
 }
 
@@ -157,6 +166,7 @@ inline QDataStream &operator>>(QDataStream &in, ToolInfo &toolInfo)
 {
   in >> toolInfo.id;
   in >> toolInfo.name;
+  in >> toolInfo.hasUi;
   return in;
 }
 

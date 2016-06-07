@@ -112,7 +112,7 @@ class GAMMARAY_CLIENT_EXPORT ClientConnectionManager : public QObject
     QUrl m_serverUrl;
     Client *m_client;
     QPointer<MainWindow> m_mainWindow;
-    QAbstractItemModel *m_toolModel;
+//     QAbstractItemModel *m_toolModel;
     QTime m_connectionTimeout;
     bool m_ignorePersistentError;
     int m_tries;
